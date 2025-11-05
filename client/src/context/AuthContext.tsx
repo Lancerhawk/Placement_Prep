@@ -26,9 +26,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         setUser(data.user);
       } else {
+        // log error for debugging
+        console.error('Auth check failed:', res.status, res.statusText);
         setUser(null);
       }
-    } catch {
+    } catch (error) {
+      console.error('Auth check error:', error);
       setUser(null);
     } finally {
       setLoading(false);

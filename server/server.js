@@ -32,6 +32,11 @@ app.use('/api/resumes', resumeRoutes);
 // health check
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
+// catch-all for undefined routes (should be after all routes)
+app.use('*', (req, res) => {
+  res.status(404).json({ message: 'Route not found', path: req.originalUrl });
+});
+
 // start the server
 const PORT = process.env.PORT || 5000;
 mongoose

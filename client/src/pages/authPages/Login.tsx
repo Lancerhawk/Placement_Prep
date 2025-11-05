@@ -26,7 +26,14 @@ export default function Login() {
         body: JSON.stringify({ email, password, remember }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ message: 'Login failed' }));
+        const errorText = await res.text();
+        console.error('Login failed:', res.status, errorText);
+        let data;
+        try {
+          data = JSON.parse(errorText);
+        } catch {
+          data = { message: `Login failed: ${res.status} ${res.statusText}` };
+        }
         throw new Error(data.message || 'Login failed');
       }
       const data = await res.json();
