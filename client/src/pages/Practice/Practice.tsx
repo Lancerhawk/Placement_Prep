@@ -1,5 +1,6 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { API_URL } from '../../config';
 import './Practice.css';
 
@@ -12,7 +13,6 @@ type PracticeItem = {
 };
 
 export default function Practice() {
-  const navigate = useNavigate();
   const [items, setItems] = useState<PracticeItem[]>([]);
   const [openForm, setOpenForm] = useState(false);
   const [form, setForm] = useState({ language: 'JavaScript', topic: 'DSA', numQuestions: 20 });
@@ -31,7 +31,7 @@ export default function Practice() {
     return () => clearInterval(id);
   }, [items]);
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {

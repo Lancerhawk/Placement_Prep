@@ -1,6 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import { API_URL } from '../../config';
 import './Dashboard.css';
 
@@ -16,7 +15,6 @@ type InterviewItem = {
 };
 
 export default function Dashboard() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState<InterviewItem[]>([]);
 
