@@ -49,7 +49,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('Logout error:', error);
     } finally {
       // cleanup on client side just in case
-      document.cookie = 'token=; Max-Age=0; path=/; SameSite=Lax';
+      // Try to clear with both SameSite options to handle both dev and prod
+      document.cookie = 'token=; Max-Age=0; path=/; SameSite=Lax; Secure=false';
+      document.cookie = 'token=; Max-Age=0; path=/; SameSite=None; Secure=true';
       setUser(null);
       // send them back to login
       window.location.href = '/login';

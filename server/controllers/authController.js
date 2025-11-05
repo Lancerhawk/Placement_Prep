@@ -6,18 +6,28 @@ function createJwt(userId) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
 }
 
-function setAuthCookie(res, token, remember) {
+function setAuthCookie(res, token, remember, req) {
+  // Detect production: check if request is HTTPS or NODE_ENV is production
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                       req.secure || 
+                       req.headers['x-forwarded-proto'] === 'https';
+  
+  const cookieOptions = {
+    httpOnly: true,
+    sameSite: isProduction ? 'none' : 'lax',
+    secure: isProduction, // Required when sameSite is 'none'
+    path: '/',
+  };
+  
   if (remember) {
+    // Persistent cookie that lasts 7 days
     res.cookie('token', token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      ...cookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
     });
   } else {
-    // don't save cookie if they didn't check remember me
-    res.clearCookie('token', { path: '/' });
+    // Session cookie (no maxAge) - cleared when browser closes
+    res.cookie('token', token, cookieOptions);
   }
 }
 
@@ -30,18 +40,33 @@ exports.register = async (req, res) => {
     if (password !== confirmPassword) {
       return res.status(400).json({ message: 'Passwords do not match' });
     }
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(409).json({ message: 'Email already registered' });
     }
     const user = await User.create({ email, username, password });
     const token = createJwt(user.id);
-    setAuthCookie(res, token, Boolean(remember));
+    setAuthCookie(res, token, Boolean(remember), req);
     res.status(201).json({
       user: { id: user.id, email: user.email, username: user.username },
       remembered: Boolean(remember),
     });
   } catch (err) {
+    // Handle mongoose validation errors
+    if (err.name === 'ValidationError') {
+      const errors = Object.values(err.errors).map(e => e.message);
+      return res.status(400).json({ message: errors.join(', ') });
+    }
+    // Handle duplicate key error
+    if (err.code === 11000) {
+      return res.status(409).json({ message: 'Email or username already registered' });
+    }
+    console.error('Registration error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -52,14 +77,20 @@ exports.login = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password required' });
     }
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
     const user = await User.findOne({ email });
     if (!user) return res.status(401).json({ message: 'Invalid credentials' });
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
     const token = createJwt(user.id);
-    setAuthCookie(res, token, Boolean(remember));
+    setAuthCookie(res, token, Boolean(remember), req);
     res.json({ user: { id: user.id, email: user.email, username: user.username }, remembered: Boolean(remember) });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
@@ -79,10 +110,13 @@ exports.me = async (req, res) => {
 exports.logout = async (req, res) => {
   try {
     // wipe the auth cookie
+    const isProduction = process.env.NODE_ENV === 'production' || 
+                         req.secure || 
+                         req.headers['x-forwarded-proto'] === 'https';
     res.clearCookie('token', {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite: isProduction ? 'none' : 'lax',
+      secure: isProduction,
       path: '/',
     });
     res.json({ message: 'Logged out successfully' });

@@ -12,6 +12,9 @@ const resumeRoutes = require('./routes/resumes');
 
 const app = express();
 
+// Trust proxy for x-forwarded-proto header (needed for Render and other hosting services)
+app.set('trust proxy', 1);
+
 // setup middleware
 app.use(express.json());
 app.use(cookieParser());

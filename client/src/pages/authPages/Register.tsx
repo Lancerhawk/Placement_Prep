@@ -24,10 +24,25 @@ export default function Register() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Validate password match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+    
+    // Validate password length
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+    
+    // Validate username length
+    if (username.length < 3 || username.length > 32) {
+      setError('Username must be between 3 and 32 characters');
+      return;
+    }
+    
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/auth/register`, {
