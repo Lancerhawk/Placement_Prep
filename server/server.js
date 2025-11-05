@@ -33,7 +33,7 @@ app.use('/api/resumes', resumeRoutes);
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
 // catch-all for undefined routes (should be after all routes)
-app.all('*', (req, res) => {
+app.all('/.*/', (req, res) => {
   res.status(404).json({ message: 'Route not found', path: req.originalUrl });
 });
 
