@@ -76,20 +76,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const checkHealth = async () => {
       let attempt = 0;
+      const start = Date.now();
+      const hardTimeoutMs = 60000; // After 60s, proceed anyway
       while (!cancelled) {
         attempt += 1;
+        // fire-and-forget warmup ping to root to help wake cold start (no-cors)
+        try { fetch(`${API_URL}/`, { mode: 'no-cors' }).catch(() => {}); } catch {}
         try {
           setStatus(attempt === 1 ? 'Checking server health...' : 'Waking backend on Render...');
           const controller = new AbortController();
-          const id = setTimeout(() => controller.abort(), 10000);
+          const id = setTimeout(() => controller.abort(), 12000);
           const res = await fetch(`${API_URL}/api/health`, { signal: controller.signal });
           clearTimeout(id);
           if (res.ok) return true;
-        } catch (_e) {
-          // ignore and retry
+          console.debug('Health check non-OK:', res.status, res.statusText);
+        } catch (e) {
+          console.debug('Health check error:', e);
         }
-        // backoff up to 2.5s
-        const delay = Math.min(500 + attempt * 250, 2500);
+        if (Date.now() - start > hardTimeoutMs) {
+          console.warn('Health check hard-timeout reached; proceeding to app.');
+          return false;
+        }
+        // backoff up to 3s
+        const delay = Math.min(500 * Math.pow(1.3, attempt), 3000);
         await sleep(delay);
       }
       return false;
@@ -98,7 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       const ok = await checkHealth();
       if (cancelled) return;
-      if (ok) setStatus('Signing you in...');
+      if (ok) setStatus('Signing you in...'); else setStatus('Connecting...');
       await refresh();
       if (cancelled) return;
       setInitializing(false);
