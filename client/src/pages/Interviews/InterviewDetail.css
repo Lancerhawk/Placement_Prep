@@ -135,6 +135,7 @@
   align-items: center;
   gap: 12px;
   cursor: pointer;
+  flex-wrap: wrap;
 }
 
 .topic-checkbox input[type="checkbox"] {

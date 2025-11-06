@@ -14,6 +14,7 @@ import Practice from './pages/Practice/Practice';
 import PracticeTest from './pages/Practice/PracticeTest';
 import PracticeResult from './pages/Practice/PracticeResult';
 import Resume from './pages/Resume/Resume';
+import SplashScreen from './components/SplashScreen';
 
 function RequireGuest({ children }: { children: React.ReactElement }) {
   const { user, loading } = useAuth();
@@ -33,6 +34,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <SplashScreen />
         <Routes>
           <Route
             path="/login"
